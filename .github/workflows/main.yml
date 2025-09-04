@@ -39,25 +39,35 @@ jobs:
 
   # ----------------- 2️⃣ PUBLISH JOB -----------------
   publish:
-    name: Publish App
-    runs-on: ubuntu-latest
-    needs: build  # ✅ waits for build job to succeed first
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
+  name: Publish App
+  runs-on: ubuntu-latest
+  needs: build
+  steps:
+    # ✅ Checkout repository so csproj file exists
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
+    # ✅ Setup .NET again
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
 
-      - name: Publish project
-        run: dotnet publish ./Tailspin.SpaceGame.Web.csproj --configuration Release --output ./publish
+    # (Optional) Download build artifacts (if needed)
+    - name: Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: build-output
 
-      - name: Upload publish artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: publish-output
-          path: ./publish
+    # ✅ Publish with correct path
+    - name: Publish project
+      run: dotnet publish ./Tailspin.SpaceGame.Web/Tailspin.SpaceGame.Web.csproj \
+             --configuration Release \
+             --output ./publish
+
+    # ✅ Upload publish artifact
+    - name: Upload publish artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: publish-output
+        path: ./publish
