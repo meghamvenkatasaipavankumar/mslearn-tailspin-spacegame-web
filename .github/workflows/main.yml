@@ -1,4 +1,4 @@
-name: Build, Publish, and Deploy to Azure VM (Single Job)
+name: Build, Publish, and Deploy to Azure VM
 
 on:
   push:
