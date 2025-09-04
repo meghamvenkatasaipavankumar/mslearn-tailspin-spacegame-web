@@ -54,7 +54,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Publish project
-        run: dotnet publish ./MyProject.csproj --configuration Release --output ./publish
+        run: dotnet publish ./Tailspin.SpaceGame.Web.csproj --configuration Release --output ./publish
 
       - name: Upload publish artifact
         uses: actions/upload-artifact@v4
