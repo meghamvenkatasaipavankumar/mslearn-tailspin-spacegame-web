@@ -1,58 +1,60 @@
-name: Build, Publish, and Deploy to Azure VM1
+name: Build and Deploy .NET App to Azure VM
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main  # Trigger on pushes to main branch
 
 jobs:
-  build_publish_deploy:
-    name: Build, Publish & Deploy
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout Code
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    # 1️⃣ Checkout Code
+    - name: Checkout Repository
+      uses: actions/checkout@v3
 
-      # 2️⃣ Setup .NET
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
+    # 2️⃣ Setup .NET
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
 
-      # 3️⃣ Restore & Build
-      - name: Restore dependencies
-        run: dotnet restore ./Tailspin.SpaceGame.Web/Tailspin.SpaceGame.Web.csproj
+    # 3️⃣ Restore, Build, Test & Publish
+    - name: Restore, Build, Test, and Publish
+      run: |
+        dotnet restore ./Tailspin.SpaceGame.Web/Tailspin.SpaceGame.Web.csproj
+        dotnet build ./Tailspin.SpaceGame.Web/Tailspin.SpaceGame.Web.csproj --configuration Release --no-restore
+        dotnet test --no-build --verbosity normal
+        dotnet publish ./Tailspin.SpaceGame.Web/Tailspin.SpaceGame.Web.csproj --configuration Release --output ./publish
 
-      - name: Build project
-        run: dotnet build ./Tailspin.SpaceGame.Web/Tailspin.SpaceGame.Web.csproj --configuration Release --no-restore
+    # 4️⃣ Setup SSH Agent
+    - name: Setup SSH Agent
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.VM_SSH_KEY }}
 
-      # 4️⃣ (Optional) Run Tests
-      - name: Run tests
-        run: dotnet test --configuration Release --no-build --verbosity normal || echo "No tests found"
+    # 5️⃣ Deploy Files to Azure VM
+    - name: Deploy published files to VM
+      run: |
+        echo "Deploying published files to VM..."
+        rsync -avz --delete ./publish/ ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/home/${{ secrets.VM_USER }}/app
 
-      # 5️⃣ Publish Project
-      - name: Publish project
-        run: dotnet publish ./Tailspin.SpaceGame.Web/Tailspin.SpaceGame.Web.csproj --configuration Release --output ./publish
+    # 6️⃣ Restart .NET App on VM
+    - name: Restart App on VM
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+        echo "Restarting service..."
+        sudo systemctl daemon-reload
+        sudo systemctl restart myapp || sudo systemctl start myapp
+        EOF
 
-      # 6️⃣ Setup SSH Key for Deployment
-      - name: Setup SSH Key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.VM_SSH_KEY }}
-
-      # 7️⃣ Deploy Files to Azure VM
-      - name: Deploy files to VM
-        run: |
-          echo "Deploying published files to VM..."
-          rsync -avz ./publish/ ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/home/${{ secrets.VM_USER }}/app
-
-      # 8️⃣ Restart Application on VM
-      - name: Restart Application
-        run: |
-          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
-          echo "Stopping old app (if running)..."
-          pkill -f "dotnet Tailspin.SpaceGame.Web.dll" || true
-          echo "Starting new app..."
-          nohup dotnet /home/${{ secrets.VM_USER }}/app/Tailspin.SpaceGame.Web.dll > app.log 2>&1 &
-          EOF
+    # 7️⃣ Verify Port 80 is Listening (Health Check)
+    - name: Verify App is Running on Port 80
+      run: |
+        echo "Checking if app is listening on port 80..."
+        ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "
+        sudo lsof -i :80 || (echo 'App is NOT listening on port 80!' && exit 1)
+        curl -I http://localhost:80 || (echo 'App is not responding on port 80!' && exit 1)
+        echo '✅ App is running on port 80 and responding!'
+        "
