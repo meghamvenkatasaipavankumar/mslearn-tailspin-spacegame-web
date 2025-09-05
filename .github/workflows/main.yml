@@ -51,18 +51,21 @@ jobs:
         echo "Deploying published files to VM..."
         rsync -avz --delete ./publish/ ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/home/${{ secrets.VM_USER }}/app
 
-    # 7️⃣ Restart Systemd Service on VM
+    # 7️⃣ Restart Systemd Service on VM (Port 5000)
     - name: Restart myapp Service
       run: |
-        echo "Restarting myapp service..."
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "sudo systemctl daemon-reload && sudo systemctl restart myapp"
-
-    # 8️⃣ Verify App is Running on Port 80
-    - name: Verify App is Running on Port 80
-      run: |
-        echo "Checking if app is listening on port 80..."
+        echo "Restarting myapp service on port 5000..."
         ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "
-          sudo lsof -i :80 || (echo '❌ App is NOT listening on port 80!' && exit 1)
-          curl -I http://localhost:80 || (echo '❌ App is not responding on port 80!' && exit 1)
-          echo '✅ App is running on port 80 and responding successfully!'
+          sudo systemctl daemon-reload
+          sudo systemctl restart myapp
+        "
+
+    # 8️⃣ Verify App is Running on Port 5000
+    - name: Verify App is Running on Port 5000
+      run: |
+        echo "Checking if app is listening on port 5000..."
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "
+          sudo lsof -i :5000 || (echo '❌ App is NOT listening on port 5000!' && exit 1)
+          curl -I http://localhost:5000 || (echo '❌ App is not responding on port 5000!' && exit 1)
+          echo '✅ App is running on port 5000 and responding successfully!'
         "
