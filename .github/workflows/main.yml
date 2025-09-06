@@ -54,7 +54,7 @@ jobs:
     # 7️⃣ Restart Systemd Service on VM (Port 5000)
     - name: Restart myapp Service
       run: |
-        echo "Restarting myapp service on port 5000..."
+        echo "Restarting myapp service on port 8080..."
         ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "
           sudo systemctl daemon-reload
           sudo systemctl restart myapp
@@ -63,9 +63,9 @@ jobs:
     # 8️⃣ Verify App is Running on Port 5000
     - name: Verify App is Running on Port 5000
       run: |
-        echo "Checking if app is listening on port 5000..."
+        echo "Checking if app is listening on port 8080..."
         ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "
-          sudo lsof -i :5000 || (echo '❌ App is NOT listening on port 5000!' && exit 1)
-          curl -I http://localhost:5000 || (echo '❌ App is not responding on port 5000!' && exit 1)
+          sudo lsof -i :8080 || (echo '❌ App is NOT listening on port 8080!' && exit 1)
+          curl -I http://localhost:8080 || (echo '❌ App is not responding on port 8080!' && exit 1)
           echo '✅ App is running on port 5000 and responding successfully!'
         "
