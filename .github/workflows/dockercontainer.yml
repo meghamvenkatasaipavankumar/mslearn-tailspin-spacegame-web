@@ -15,7 +15,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t spacegame:latest .
+        docker build -t spacegame:latest -f Tailspin.SpaceGame.Web/Dockerfile .
 
     - name: Run Docker container
       run: |
