@@ -1,9 +1,7 @@
 name: Build and Deploy .NET App to Azure VM1
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
